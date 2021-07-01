@@ -1,9 +1,16 @@
 /* eslint-disable no-console */
 const Hapi = require("@hapi/hapi");
 const { Pool } = require("pg");
-const song = require("./apis/song");
-const SongService = require("./services/postgres/SongService");
-const SongValidator = require("./validator/song");
+const songs = require("./apis/songs");
+const users = require("./apis/users");
+const authentications = require("./apis/authentications");
+const SongsService = require("./services/postgres/SongsService");
+const UsersService = require("./services/postgres/UsersService");
+const AuthenticationsService = require("./services/postgres/AuthenticationsService");
+const SongsValidator = require("./validator/songs");
+const UsersValidator = require("./validator/users");
+const AuthenticationsValidator = require("./validator/authentications");
+const TokenManager = require("./tokenize/TokenManager");
 
 require("dotenv").config();
 
@@ -27,12 +34,29 @@ const init = async () => {
     port: process.env.PGPORT,
   });
 
-  const songService = new SongService();
+  const songsService = new SongsService();
+  const usersService = new UsersService();
+  const authenticationsService = new AuthenticationsService();
 
-  await server.register({
-    plugin: song,
-    options: { service: songService, validator: SongValidator },
-  });
+  await server.register([
+    {
+      plugin: songs,
+      options: { service: songsService, validator: SongsValidator },
+    },
+    {
+      plugin: users,
+      options: { service: usersService, validator: UsersValidator },
+    },
+    {
+      plugin: authentications,
+      options: {
+        authenticationsService,
+        usersService,
+        tokenManager: TokenManager,
+        validator: AuthenticationsValidator,
+      },
+    },
+  ]);
 
   await server.start();
   console.log("Server running on %s", server.info.uri);
