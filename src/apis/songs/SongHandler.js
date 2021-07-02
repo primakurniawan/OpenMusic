@@ -1,5 +1,5 @@
 /* eslint-disable no-underscore-dangle */
-const ClientError = require('../../exceptions/ClientError');
+const ClientError = require("../../exceptions/ClientError");
 
 class SongHandler {
   constructor(service, validator) {
@@ -16,9 +16,7 @@ class SongHandler {
   async postNewSong(request, h) {
     try {
       this._validator.validateSongPayload(request.payload);
-      const {
-        title, year, performer, genre, duration,
-      } = request.payload;
+      const { title, year, performer, genre, duration } = request.payload;
       const id = await this._service.addNewSong({
         title,
         year,
@@ -28,8 +26,8 @@ class SongHandler {
       });
 
       const response = h.response({
-        status: 'success',
-        message: 'Lagu berhasil ditambahkan',
+        status: "success",
+        message: "Lagu berhasil ditambahkan",
         data: {
           songId: id,
         },
@@ -39,15 +37,15 @@ class SongHandler {
     } catch (err) {
       if (err instanceof ClientError) {
         const response = h.response({
-          status: 'fail',
+          status: "fail",
           message: err.message,
         });
         response.code(err.statusCode);
         return response;
       }
       const response = h.response({
-        status: 'error',
-        message: 'Maaf terjadi kegagalan di sistem kami',
+        status: "error",
+        message: "Maaf terjadi kegagalan di sistem kami",
       });
       response.code(500);
       return response;
@@ -57,7 +55,7 @@ class SongHandler {
   async getAllSongs(request, h) {
     const allSongs = await this._service.getAllSongs();
     const response = h.response({
-      status: 'success',
+      status: "success",
       data: {
         songs: allSongs,
       },
@@ -71,7 +69,7 @@ class SongHandler {
     try {
       const song = await this._service.getSongById(id);
       const response = h.response({
-        status: 'success',
+        status: "success",
         data: {
           song,
         },
@@ -81,15 +79,15 @@ class SongHandler {
     } catch (err) {
       if (err instanceof ClientError) {
         const response = h.response({
-          status: 'fail',
+          status: "fail",
           message: err.message,
         });
         response.code(err.statusCode);
         return response;
       }
       const response = h.response({
-        status: 'error',
-        message: 'Maaf terjadi kegagalan di sistem kami',
+        status: "error",
+        message: "Maaf terjadi kegagalan di sistem kami",
       });
       response.code(500);
       return response;
@@ -100,9 +98,7 @@ class SongHandler {
     try {
       this._validator.validateSongPayload(request.payload);
       const { id } = request.params;
-      const {
-        title, year, performer, genre, duration,
-      } = request.payload;
+      const { title, year, performer, genre, duration } = request.payload;
       await this._service.editSongById(id, {
         title,
         year,
@@ -111,23 +107,23 @@ class SongHandler {
         duration,
       });
       const response = h.response({
-        status: 'success',
-        message: 'lagu berhasil diperbarui',
+        status: "success",
+        message: "lagu berhasil diperbarui",
       });
       response.code(200);
       return response;
     } catch (err) {
       if (err instanceof ClientError) {
         const response = h.response({
-          status: 'fail',
+          status: "fail",
           message: err.message,
         });
         response.code(err.statusCode);
         return response;
       }
       const response = h.response({
-        status: 'error',
-        message: 'Maaf terjadi kegagalan di sistem kami',
+        status: "error",
+        message: "Maaf terjadi kegagalan di sistem kami",
       });
       response.code(500);
       return response;
@@ -139,23 +135,23 @@ class SongHandler {
       const { id } = request.params;
       await this._service.deleteSongById(id);
       const response = h.response({
-        status: 'success',
-        message: 'lagu berhasil dihapus',
+        status: "success",
+        message: "lagu berhasil dihapus",
       });
       response.code(200);
       return response;
     } catch (err) {
       if (err instanceof ClientError) {
         const response = h.response({
-          status: 'fail',
+          status: "fail",
           message: err.message,
         });
         response.code(err.statusCode);
         return response;
       }
       const response = h.response({
-        status: 'error',
-        message: 'Maaf terjadi kegagalan di sistem kami',
+        status: "error",
+        message: "Maaf terjadi kegagalan di sistem kami",
       });
       response.code(500);
       return response;

@@ -1,16 +1,20 @@
 /* eslint-disable no-console */
 const Hapi = require("@hapi/hapi");
 const { Pool } = require("pg");
+const Jwt = require("@hapi/jwt");
 const songs = require("./apis/songs");
 const users = require("./apis/users");
 const authentications = require("./apis/authentications");
 const SongsService = require("./services/postgres/SongsService");
 const UsersService = require("./services/postgres/UsersService");
 const AuthenticationsService = require("./services/postgres/AuthenticationsService");
+const PlaylistsService = require("./services/postgres/PlaylistsService");
 const SongsValidator = require("./validator/songs");
 const UsersValidator = require("./validator/users");
 const AuthenticationsValidator = require("./validator/authentications");
 const TokenManager = require("./tokenize/TokenManager");
+const playlists = require("./apis/playlists");
+const PlaylistValidator = require("./validator/playlists");
 
 require("dotenv").config();
 
@@ -37,6 +41,29 @@ const init = async () => {
   const songsService = new SongsService();
   const usersService = new UsersService();
   const authenticationsService = new AuthenticationsService();
+  const playlistsService = new PlaylistsService();
+
+  await server.register([
+    {
+      plugin: Jwt,
+    },
+  ]);
+
+  server.auth.strategy("songsapp_jwt", "jwt", {
+    keys: process.env.ACCESS_TOKEN_KEY,
+    verify: {
+      aud: false,
+      iss: false,
+      sub: false,
+      maxAgeSec: process.env.ACCESS_TOKEN_AGE,
+    },
+    validate: (artifacts) => ({
+      isValid: true,
+      credentials: {
+        id: artifacts.decoded.payload.id,
+      },
+    }),
+  });
 
   await server.register([
     {
@@ -54,6 +81,14 @@ const init = async () => {
         usersService,
         tokenManager: TokenManager,
         validator: AuthenticationsValidator,
+      },
+    },
+    {
+      plugin: playlists,
+      options: {
+        playlistsService,
+        songsService,
+        validator: PlaylistValidator,
       },
     },
   ]);
