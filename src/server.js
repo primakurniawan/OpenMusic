@@ -2,6 +2,8 @@
 const Hapi = require("@hapi/hapi");
 const { Pool } = require("pg");
 const Jwt = require("@hapi/jwt");
+const Inert = require("@hapi/inert");
+const path = require("path");
 const songs = require("./apis/songs");
 const users = require("./apis/users");
 const authentications = require("./apis/authentications");
@@ -15,7 +17,13 @@ const AuthenticationsValidator = require("./validator/authentications");
 const TokenManager = require("./tokenize/TokenManager");
 const playlists = require("./apis/playlists");
 const PlaylistValidator = require("./validator/playlists");
-
+const ProducerService = require("./services/rabbitmq/ProducerService");
+const ExportsValidator = require("./validator/exports");
+const _exports = require("./apis/exports");
+const uploads = require("./apis/uploads");
+const UploadsValidator = require("./validator/uploads");
+const StorageService = require("./services/storage/StorageService");
+const CacheService = require("./services/redis/cacheService");
 require("dotenv").config();
 
 const init = async () => {
@@ -41,11 +49,18 @@ const init = async () => {
   const songsService = new SongsService();
   const usersService = new UsersService();
   const authenticationsService = new AuthenticationsService();
-  const playlistsService = new PlaylistsService();
+  const cacheService = new CacheService();
+  const playlistsService = new PlaylistsService(cacheService);
+  const storageService = new StorageService(
+    path.resolve(__dirname, "apis/uploads/file/pictures")
+  );
 
   await server.register([
     {
       plugin: Jwt,
+    },
+    {
+      plugin: Inert,
     },
   ]);
 
@@ -89,6 +104,21 @@ const init = async () => {
         playlistsService,
         songsService,
         validator: PlaylistValidator,
+      },
+    },
+    {
+      plugin: _exports,
+      options: {
+        ProducerService,
+        playlistsService,
+        validator: ExportsValidator,
+      },
+    },
+    {
+      plugin: uploads,
+      options: {
+        service: storageService,
+        validator: UploadsValidator,
       },
     },
   ]);

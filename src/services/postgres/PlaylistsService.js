@@ -5,8 +5,9 @@ const NotFoundError = require("../../exceptions/NotFoundError");
 const AuthorizationError = require("../../exceptions/AuthorizationError");
 
 class PlaylistsService {
-  constructor() {
+  constructor(cacheService) {
     this._pool = new Pool();
+    this._cacheService = cacheService;
   }
 
   async addPlaylist({ name }, owner) {
@@ -44,6 +45,8 @@ class PlaylistsService {
     if (!result.rows.length) {
       throw NotFoundError("Song gagal dihapus. Id tidak ditemukan");
     }
+
+    await this._cacheService.delete(`playlistsong:${id}`);
   }
 
   async getPlaylistById(id) {
@@ -68,16 +71,28 @@ class PlaylistsService {
     if (!result.rows.length) {
       throw new InvariantError("Gagal menambahkan lagu ke playlist");
     }
+
+    await this._cacheService.delete(`playlistsong:${playlistId}`);
   }
 
   async getSongsFromPlaylistById(id) {
-    const query = {
-      text: "SELECT songs.id, songs.title, songs.performer FROM playlistsongs LEFT JOIN songs ON songs.id = playlistsongs.song_id LEFT JOIN playlists ON playlists.id = playlistsongs.playlist_id WHERE playlistsongs.playlist_id=$1",
-      values: [id],
-    };
-    const result = await this._pool.query(query);
+    try {
+      const result = await this._cacheService.get(`playlistsong:${id}`);
+      return JSON.parse(result);
+    } catch (error) {
+      const query = {
+        text: "SELECT songs.id, songs.title, songs.performer FROM playlistsongs LEFT JOIN songs ON songs.id = playlistsongs.song_id LEFT JOIN playlists ON playlists.id = playlistsongs.playlist_id WHERE playlistsongs.playlist_id=$1",
+        values: [id],
+      };
+      const result = await this._pool.query(query);
 
-    return result.rows;
+      await this._cacheService.set(
+        `playlistsong:${id}`,
+        JSON.stringify(result.rows)
+      );
+
+      return result.rows;
+    }
   }
 
   async deleteSongFromPlaylist({ songId }, id) {
@@ -89,6 +104,8 @@ class PlaylistsService {
     if (!result.rows.length) {
       throw new NotFoundError("Song gagal dihapus. Id tidak ditemukan");
     }
+
+    await this._cacheService.delete(`playlistsong:${id}`);
   }
 
   async verifyPlaylistOwner(playlistId, userId) {
